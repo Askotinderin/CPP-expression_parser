@@ -1,0 +1,41 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "run",
+            "type": "shell",
+            "command": "./run.sh",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "./build.sh",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "force",
+            "type": "shell",
+            "command": "./force.sh",
+            "group": {
+                "kind": "build",
+            }
+        },
+        {
+            "label": "debug",
+            "type": "shell",
+            "command": "./debug.sh",
+            "group": {
+                "kind": "test",
+            },
+        }
+    ]
+}
