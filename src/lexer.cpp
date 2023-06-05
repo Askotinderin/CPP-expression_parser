@@ -1,5 +1,8 @@
 #include "lexer.hpp"
 
+
+std::unordered_map<std::string, float> variables;
+
 bool is_number (std::string& str) {
     bool dot = false;
     for (const auto& c : str) {
@@ -14,73 +17,132 @@ bool is_number (std::string& str) {
     return true;
 }
 
-
-void op::push (std::stack<float>& operands, float num) {
-    operands.push(num);
+bool is_identifier (std::string& str) {
+    for (const auto& c : str) {
+        if (c == '_') continue;
+        if (std::isalpha(c))
+            return true;
+        else
+            return false;
+    }
+    return false;
 }
-void op::add (std::stack<float>& operands, float num) {
+
+bool is_keyword (std::string& str) {
+    UNUSED(str);
+    return false;
+}
+
+
+void op::push (std::stack<float>& operands, Token* t) {
+    if (t->kind == TK::NUMBER) {
+        operands.push(t->number);
+    }
+    else if (t->kind == TK::IDENTIFIER) {
+        if (variables.count(t->name) == 1)
+            operands.push(variables[t->name]);
+        else {
+            std::cout << "ERROR: undefined variable " << t->name << std::endl;
+            exit(-1);
+        }
+
+    }
+}
+void op::add (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " + " << temp << " = ";
     operands.top() += temp;
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::mul (std::stack<float>& operands, float num) {
+void op::mul (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " * " << temp << " = ";
     operands.top() *= temp;
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::sub (std::stack<float>& operands, float num) {
+void op::sub (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " - " << temp << " = ";
     operands.top() -= temp;
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::div (std::stack<float>& operands, float num) {
+void op::div (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " / " << temp << " = ";
     operands.top() /= temp;
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::mod (std::stack<float>& operands, float num) {
+void op::mod (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     int temp = (int)operands.top();
     operands.pop();
     std::cout << operands.top() << " % " << temp << " = ";
     operands.top() =(float)((int)operands.top()%temp);
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::pow (std::stack<float>& operands, float num) {
+void op::pow (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " ^ " << temp << " = ";
     operands.top() = std::pow(operands.top(), temp);
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::min (std::stack<float>& operands, float num) {
+void op::min (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " & " << temp << " = ";
     operands.top() = std::fmin(operands.top(), temp);
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
-void op::max (std::stack<float>& operands, float num) {
+void op::max (std::stack<float>& operands, Token* t) {
+    if (operands.empty()) {
+        std::cout << "ERROR: stack is empty" << std::endl;
+        exit(-1);
+    }
     float temp = operands.top();
     operands.pop();
     std::cout << operands.top() << " | " << temp << " = ";
     operands.top() = std::fmin(operands.top(), temp);
     std::cout << operands.top() << std::endl;
-    UNUSED(num);
+    UNUSED(t);
 }
 
 
@@ -91,10 +153,15 @@ Token::Token(TokenKind kind, std::string content) {
         this->number = std::stof(content);
         this->table_id = 1;
     }
+    else if (kind == TK::IDENTIFIER) {
+        this->number = 0;
+        this->table_id = 1;
+    }
     else if (kind == TK::OPERATOR) {
         this->table_id = op_to_id.at(content);
         this->number = 0;
-    } else {
+    }
+    else {
         this->table_id = 0;
         this->number = 0;
     }
@@ -108,7 +175,7 @@ Token::Token(int id, std::string content) {
 }
 
 void Token::reduce (std::stack<float>& operands) {
-    functions[table_id](operands, number);
+    functions[table_id](operands, this);
 }
 
 
@@ -131,7 +198,24 @@ void Lexer::lex_number(std::stringstream& file) {
         std::cerr << "invalid number" << std::endl;
         exit(-1);
     }
+    content = "";
+}
 
+void Lexer::lex_symbol(std::stringstream& file) {
+    do {
+        content += c;
+        file >> std::noskipws >> c;
+    }
+    while (!file.eof() && (std::isalnum(c) || c == '_'));
+
+    if (is_keyword(content))
+        tokens.push(Token(TK::KEYWORD, content));
+    else if (is_identifier(content))
+        tokens.push(Token(TK::IDENTIFIER, content));
+    else {
+        std::cerr << "invalid identifier" << std::endl;
+        exit(-1);
+    }
     content = "";
 }
 
@@ -162,12 +246,13 @@ std::queue<Token> Lexer::operator() (std::stringstream& file) {
             continue;
         }
         if (c == '\n') {
+            tokens.push(Token(TK::EOE, "$"));
             file >> std::noskipws >> c;
             continue;
         }
 
         if (std::isalpha(c) || c == '_') {
-            // lex_symbol(file);
+            lex_symbol(file);
             continue;
         }
         if (std::isdigit(c)) {

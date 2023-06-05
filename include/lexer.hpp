@@ -10,9 +10,15 @@
 #include <cmath>
 
 
-#define OP_SIZE 12
+#define OP_SIZE 14
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
+
+extern std::unordered_map<std::string, float> variables;
+
+bool is_number (std::string& str);
+bool is_identifier (std::string& str);
+bool is_keyword (std::string& str);
 
 const std::unordered_map<std::string, int> op_to_id = {
     {"+", 2},
@@ -25,12 +31,16 @@ const std::unordered_map<std::string, int> op_to_id = {
     {"^", 9},
     {"&", 10},
     {"|", 11},
+    {"=", 12},
+    {";", 13},
 };
 
 typedef enum class TK : unsigned char{
     EOE,
     OPERATOR,
-    NUMBER
+    NUMBER,
+    KEYWORD,
+    IDENTIFIER
 }TokenKind;
 
 const std::unordered_map<TokenKind, std::string> kind_to_str = {
@@ -38,32 +48,6 @@ const std::unordered_map<TokenKind, std::string> kind_to_str = {
     {TK::OPERATOR,  "Operator: "},
     {TK::NUMBER,    "Number: "},
 
-};
-namespace op {
-    void push (std::stack<float>& operands, float num);
-    void add (std::stack<float>& operands, float num);
-    void mul (std::stack<float>& operands, float num);
-    void sub (std::stack<float>& operands, float num);
-    void div (std::stack<float>& operands, float num);
-    void mod (std::stack<float>& operands, float num);
-    void pow (std::stack<float>& operands, float num);
-    void min (std::stack<float>& operands, float num);
-    void max (std::stack<float>& operands, float num);
-}
-
-const std::array<std::function<void(std::stack<float>&, float)>, OP_SIZE> functions  = {
-    nullptr,
-    op::push,
-    op::add,
-    op::mul,
-    op::sub,
-    op::div,
-    op::mod,
-    nullptr,
-    nullptr,
-    op::pow,
-    op::min,
-    op::max
 };
 
 struct Token {
@@ -77,6 +61,35 @@ struct Token {
 
     void reduce (std::stack<float>& operands);
 
+};
+
+namespace op {
+    void push (std::stack<float>& operands,     Token* t);
+    void add (std::stack<float>& operands,      Token* t);
+    void mul (std::stack<float>& operands,      Token* t);
+    void sub (std::stack<float>& operands,      Token* t);
+    void div (std::stack<float>& operands,      Token* t);
+    void mod (std::stack<float>& operands,      Token* t);
+    void pow (std::stack<float>& operands,      Token* t);
+    void min (std::stack<float>& operands,      Token* t);
+    void max (std::stack<float>& operands,      Token* t);
+}
+
+const std::array<std::function<void(std::stack<float>&, Token*)>, OP_SIZE> functions  = {
+    nullptr,
+    op::push,
+    op::add,
+    op::mul,
+    op::sub,
+    op::div,
+    op::mod,
+    nullptr,
+    nullptr,
+    op::pow,
+    op::min,
+    op::max,
+    nullptr,
+    nullptr
 };
 
 class Lexer {
